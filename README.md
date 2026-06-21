@@ -17,6 +17,9 @@ scoop bucket add imkkingshuk https://github.com/ImKKingshuk/scoop-bucket
 | Manifest | Description | Install |
 |----------|-------------|---------|
 | **LockKnife** | The Ultimate Android Security Research Tool | `scoop install imkkingshuk/lockknife` |
+| **BloatwareHatao** | The Ultimate Android Bloatware Removal Tool | `scoop install imkkingshuk/bloatwarehatao` |
+
+BloatwareHatao becomes installable after its first GitHub release is published and the `Update Bucket` workflow generates `bucket/bloatwarehatao.json`.
 
 ## Usage
 
@@ -26,9 +29,11 @@ scoop bucket add imkkingshuk https://github.com/ImKKingshuk/scoop-bucket
 
 # Install a manifest
 scoop install imkkingshuk/lockknife
+scoop install imkkingshuk/bloatwarehatao
 
 # Update
 scoop update && scoop update lockknife
+scoop update && scoop update bloatwarehatao
 ```
 
 ## Requirements
@@ -39,4 +44,3 @@ scoop update && scoop update lockknife
 ## License
 
 Each manifest references its respective project's license. See individual project repositories for details.
-

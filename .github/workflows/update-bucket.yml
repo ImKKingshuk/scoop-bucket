@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - lockknife
+          - bloatwarehatao
 
 jobs:
   prepare:
@@ -32,6 +33,11 @@ jobs:
               ASSET_REGEX='^lockknife-[0-9.]+-cp312-abi3-win_amd64\.whl$'
               URL_SUFFIX='#/lockknife.whl'
               ;;
+            bloatwarehatao)
+              REPO="ImKKingshuk/BloatwareHatao"
+              ASSET_REGEX='^bloatwarehatao-[0-9.]+-x86_64-pc-windows-msvc\.zip$'
+              URL_SUFFIX=''
+              ;;
             *)
               echo "::error::Unknown manifest: $MANIFEST"
               exit 1
@@ -46,18 +52,14 @@ jobs:
           TAG="$(jq -r '.tag_name' <<<"$RELEASE_JSON")"
           VERSION="${TAG#v}"
           ASSET_URL="$(jq -r --arg rx "$ASSET_REGEX" '.assets[] | select(.name | test($rx)) | .browser_download_url' <<<"$RELEASE_JSON" | head -n1)"
-          ASSET_DIGEST="$(jq -r --arg rx "$ASSET_REGEX" '.assets[] | select(.name | test($rx)) | .digest' <<<"$RELEASE_JSON" | head -n1)"
-          ASSET_HASH="${ASSET_DIGEST#sha256:}"
 
           if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
             echo "::error::Could not resolve a release asset for ${MANIFEST}"
             exit 1
           fi
 
-          if [ -z "$ASSET_HASH" ] || [ "$ASSET_HASH" = "null" ]; then
-            echo "::error::Could not resolve a SHA256 digest for ${MANIFEST}"
-            exit 1
-          fi
+          curl -fsSL -o /tmp/release-asset "$ASSET_URL"
+          ASSET_HASH="$(sha256sum /tmp/release-asset | awk '{print $1}')"
 
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "url=${ASSET_URL}${URL_SUFFIX}" >> "$GITHUB_OUTPUT"
@@ -67,6 +69,48 @@ jobs:
         run: |
           MANIFEST_PATH="bucket/${{ inputs.manifest }}.json"
           TMP_FILE="$(mktemp)"
+
+          if [ ! -f "$MANIFEST_PATH" ]; then
+            case "${{ inputs.manifest }}" in
+              bloatwarehatao)
+                mkdir -p bucket
+                jq -n '
+                  {
+                    version: "0.0.0",
+                    description: "Ultimate Android bloatware removal and device optimization toolkit",
+                    homepage: "https://github.com/ImKKingshuk/BloatwareHatao",
+                    license: "GPL-3.0-only",
+                    architecture: {
+                      "64bit": {
+                        url: "",
+                        hash: ""
+                      }
+                    },
+                    bin: "bloatwarehatao.exe",
+                    checkver: {
+                      url: "https://api.github.com/repos/ImKKingshuk/BloatwareHatao/releases/latest",
+                      jsonpath: "$.tag_name",
+                      regex: "v(?<version>.*)"
+                    },
+                    autoupdate: {
+                      architecture: {
+                        "64bit": {
+                          url: "https://github.com/ImKKingshuk/BloatwareHatao/releases/download/v$version/bloatwarehatao-$version-x86_64-pc-windows-msvc.zip"
+                        }
+                      }
+                    },
+                    notes: [
+                      "Install Android platform-tools separately if you need adb-driven workflows."
+                    ]
+                  }
+                ' > "$MANIFEST_PATH"
+                ;;
+              *)
+                echo "::error::Manifest file does not exist: $MANIFEST_PATH"
+                exit 1
+                ;;
+            esac
+          fi
 
           jq \
             --arg version "${{ steps.resolve.outputs.version }}" \
@@ -90,12 +134,18 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Stage updated manifest
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          mkdir -p dist
+          cp "bucket/${{ inputs.manifest }}.json" "dist/${{ inputs.manifest }}.json"
+
       - name: Upload updated manifest
         if: steps.diff.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: updated-manifest
-          path: bucket/${{ inputs.manifest }}.json
+          path: dist/${{ inputs.manifest }}.json
 
   validate:
     needs: prepare
@@ -108,7 +158,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: updated-manifest
-          path: .
+          path: bucket
 
       - name: Install Scoop
         shell: powershell
@@ -126,7 +176,7 @@ jobs:
         shell: powershell
         run: |
           scoop install imkkingshuk/${{ inputs.manifest }}
-          lockknife --version
+          & "${{ inputs.manifest }}" --version
 
   publish:
     needs: [prepare, validate]
@@ -141,7 +191,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: updated-manifest
-          path: .
+          path: bucket
 
       - name: Commit update
         run: |
