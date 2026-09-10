@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "description": "Ultimate Android bloatware removal and device optimization toolkit",
+  "homepage": "https://github.com/ImKKingshuk/BloatwareHatao",
+  "license": "GPL-3.0-only",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/ImKKingshuk/BloatwareHatao/releases/download/v1.0.0/bloatwarehatao-1.0.0-x86_64-pc-windows-msvc.zip",
+      "hash": "8e1768a8350a6d5f1a3604ed008be41fafec2d2b74a28e8538db5049b6f24a2a"
+    }
+  },
+  "bin": "bloatwarehatao.exe",
+  "checkver": {
+    "url": "https://api.github.com/repos/ImKKingshuk/BloatwareHatao/releases/latest",
+    "jsonpath": "$.tag_name",
+    "regex": "^v(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)$"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/ImKKingshuk/BloatwareHatao/releases/download/v$version/bloatwarehatao-$version-x86_64-pc-windows-msvc.zip"
+      }
+    }
+  },
+  "notes": [
+    "Install Android platform-tools separately for adb-driven device operations."
+  ]
+}

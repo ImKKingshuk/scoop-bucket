@@ -1,0 +1,48 @@
+{
+  "version": "1.2.0",
+  "description": "Unified Android security research and forensic investigation toolkit",
+  "homepage": "https://github.com/ImKKingshuk/LockKnife",
+  "license": "GPL-3.0-only",
+  "depends": "python",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/ImKKingshuk/LockKnife/releases/download/v1.2.0/lockknife-1.2.0-cp312-abi3-win_amd64.whl",
+      "hash": "2841fc870e648e6afa4230fb7a9bece1484e25cb803209eedaecf2194fb3f6af"
+    }
+  },
+  "installer": {
+    "script": [
+      "$scoopRoot = if ($env:SCOOP) { $env:SCOOP } else { Join-Path $env:USERPROFILE 'scoop' }",
+      "$scoopPython = Join-Path $scoopRoot 'apps\\python\\current\\python.exe'",
+      "$python = if (Test-Path $scoopPython) { $scoopPython } else { (Get-Command python).Source }",
+      "$venv = Join-Path $dir 'venv'",
+      "$wheel = Join-Path $dir \"lockknife-$version-cp312-abi3-win_amd64.whl\"",
+      "& $python -m venv $venv",
+      "if ($LASTEXITCODE -ne 0) { throw 'Could not create the LockKnife virtual environment' }",
+      "$venvPython = Join-Path $venv 'Scripts\\python.exe'",
+      "& $venvPython -m pip install --disable-pip-version-check --upgrade pip",
+      "if ($LASTEXITCODE -ne 0) { throw 'Could not upgrade pip in the LockKnife virtual environment' }",
+      "& $venvPython -m pip install --disable-pip-version-check $wheel",
+      "if ($LASTEXITCODE -ne 0) { throw 'Could not install the LockKnife wheel' }",
+      "$shim = @('@echo off', '\"%~dp0venv\\Scripts\\python.exe\" -m lockknife %*')",
+      "Set-Content -Path (Join-Path $dir 'lockknife.cmd') -Value $shim -Encoding Ascii"
+    ]
+  },
+  "bin": "lockknife.cmd",
+  "checkver": {
+    "url": "https://api.github.com/repos/ImKKingshuk/LockKnife/releases/latest",
+    "jsonpath": "$.tag_name",
+    "regex": "v(?<version>.*)"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/ImKKingshuk/LockKnife/releases/download/v$version/lockknife-$version-cp312-abi3-win_amd64.whl"
+      }
+    }
+  },
+  "notes": [
+    "Windows ARM64 is not published yet, so this manifest currently targets 64-bit x86 Windows only.",
+    "Install Android platform-tools separately if you need adb-driven workflows."
+  ]
+}
